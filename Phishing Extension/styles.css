@@ -1,0 +1,58 @@
+body {
+    font-family: Arial, sans-serif;
+    width: 280px;
+    text-align: center;
+    padding: 15px;
+    background: #f4f4f4;
+}
+
+.container {
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+h2 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+p {
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+#result-container {
+    padding: 8px;
+    font-weight: bold;
+    border-radius: 8px;
+    margin: 10px 0;
+    transition: all 0.3s ease-in-out;
+}
+
+.safe {
+    background: #d4edda;
+    color: #155724;
+}
+
+.phishing {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+button {
+    background: #007bff;
+    color: white;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: 10px;
+}
+
+button:hover {
+    background: #0056b3;
+}

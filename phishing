@@ -1,0 +1,87 @@
+import pandas as pd
+import numpy as np
+import tensorflow as tf
+import matplotlib.pyplot as plt
+import seaborn as sns
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import Dense, Dropout, Conv1D, Flatten, Bidirectional, GRU, BatchNormalization
+from tensorflow.keras.regularizers import l2
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+import pickle
+
+# Load Dataset
+df = pd.read_csv("Phishing_new 2023.csv")
+
+# Check for missing values
+df.fillna(0, inplace=True)
+
+# Separate Features and Target
+X = df.drop(columns=["CLASS_LABEL"])  # Assuming CLASS_LABEL is the target
+y = df["CLASS_LABEL"]
+
+# Feature Selection (Using SelectKBest to retain top 48 features)
+selector = SelectKBest(score_func=f_classif, k=48)
+X_new = selector.fit_transform(X, y)
+
+# Train-Test Split (80-20 split)
+X_train, X_test, y_train, y_test = train_test_split(X_new, y, test_size=0.2, random_state=42, stratify=y)
+
+# Standardization
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Reshape Data for CNN Input
+X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
+
+# Build CNN-BiGRU Model
+model = Sequential([
+    Conv1D(filters=64, kernel_size=3, activation="relu", input_shape=(X_train.shape[1], 1), kernel_regularizer=l2(0.001)),
+    BatchNormalization(),
+    Conv1D(filters=128, kernel_size=3, activation="relu", kernel_regularizer=l2(0.001)),
+    BatchNormalization(),
+    Flatten(),
+    Bidirectional(GRU(64, return_sequences=True, dropout=0.3, recurrent_dropout=0.2)),
+    Bidirectional(GRU(32, dropout=0.3, recurrent_dropout=0.2)),
+    Dense(64, activation="relu"),
+    Dropout(0.4),
+    Dense(32, activation="relu"),
+    Dense(1, activation="sigmoid")  # Binary classification
+])
+
+# Compile Model
+model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+
+# Train Model
+history = model.fit(X_train, y_train, epochs=15, batch_size=32, validation_split=0.1, verbose=1)
+
+# Evaluate Model
+y_pred = (model.predict(X_test) > 0.5).astype("int32")
+
+# Performance Metrics
+print("Classification Report:\n", classification_report(y_test, y_pred))
+print("ROC-AUC Score:", roc_auc_score(y_test, y_pred))
+
+# Confusion Matrix
+plt.figure(figsize=(5, 4))
+sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d", cmap="Blues")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("Confusion Matrix")
+plt.show()
+
+# Save Model in HDF5 Format
+model.save("phishing_model.h5")
+
+# Save Scaler & Feature Selector for Deployment
+with open("scaler.pkl", "wb") as f:
+    pickle.dump(scaler, f)
+
+with open("feature_selector.pkl", "wb") as f:
+    pickle.dump(selector, f)
+
+print("Model and preprocessing tools saved successfully!")
